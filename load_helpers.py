@@ -41,17 +41,30 @@ def concatenate_images(img, gt_img):
         cimg = np.concatenate((img8, gt_img_3c), axis=1)
     return cimg
 
-def img_crop(im, w, h):
+def img_crop(im, patch_dimensions):
+    # We treat square patches
     list_patches = []
-    imgwidth = im.shape[0]
-    imgheight = im.shape[1]
+    # We treat square images
+    img_dimensions = im.shape[0]
+    #####PB PADDING SIZE
+    padding_size = int((img_dimensions - patch_dimensions)/2)
     is_2d = len(im.shape) < 3
-    for i in range(0,imgheight,h):
-        for j in range(0,imgwidth,w):
+    #### PB IN RANGE BOUCLES FOR
+    for i in range(0,img_dimensions,patch_dimensions):
+        for j in range(0,img_dimensions,patch_dimensions):
+            # pad the data before treating it
             if is_2d:
-                im_patch = im[j:j+w, i:i+h]
+                im1 = np.pad(im, ((padding_size, padding_size), (padding_size, padding_size)), 'reflect')
+                ###### PB HEREEEEEEEEE
+                im_patch = im1[j:j+patch_dimensions, i:i+patch_dimensions]
             else:
-                im_patch = im[j:j+w, i:i+h, :]
+                im1 = np.pad(im, ((padding_size, padding_size), (padding_size, padding_size), (0, 0)), 'reflect')
+                im_patch = im1[j:j+patch_dimensions, i:i+patch_dimensions, :]
             list_patches.append(im_patch)
     return list_patches
 
+def value_to_class(v,foreground_threshold=0.5):
+    #### DES TRUCS A CHANGER !!!!!!!!!!!!
+    df = np.sum(v)
+    if df > foreground_threshold : return 1
+    else : return 0
