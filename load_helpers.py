@@ -55,3 +55,9 @@ def img_crop(im, w, h):
             list_patches.append(im_patch)
     return list_patches
 
+def value_to_class_NN(v,foreground_threshold=0.25):
+    df = np.sum(np.mean(v))
+    if df > foreground_threshold:
+        return [0, 1]
+    else:
+        return [1, 0]
