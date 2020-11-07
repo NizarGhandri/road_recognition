@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.image as mpimg
 import numpy as np
@@ -14,6 +8,8 @@ from skimage.util import random_noise
 from keras.preprocessing.image import array_to_img
 from PIL import Image, ImageEnhance
 from keras.preprocessing.image import img_to_array
+from keras.preprocessing.image import ImageDataGenerator
+
 
 def rotate_images(img1 , img2 ):
     """
@@ -35,6 +31,14 @@ def add_noise(img, ratio):
     img_copy= img.copy()
     return random_noise(img_copy, mode='s&p', amount=ratio, seed=None, clip=True)
 
+def add_brightness(img1 ): 
+    """
+    randomly change brightness of image
+    """
+    factor= random.uniform(0.5, 1.5)
+    img1_copy= array_to_img(img1)
+    return img_to_array(ImageEnhance.Brightness(img1_copy).enhance(factor))
+
 def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterations):
     """
     main function : made to add new images to the dataset
@@ -47,8 +51,8 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
     v)zooms in the images
     vi) height and width shift
     """
-
-    imgs_array = np.array([img_to_array(img) for img in imgs])
+    #we begin by adding brightness
+    imgs_array = np.array([add_brightness(img) for img in imgs])
     gt_imgs_array = np.array([img_to_array(img) for img in gt_imgs])
 
     rotated = [rotate_images(img[0] , img[1]) for img in  zip(imgs_array, gt_imgs_array)]
@@ -56,22 +60,15 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
     imgs_array_rotated= np.array(unziped_rotated[0])
     gt_imgs_array_rotated= np.array(unziped_rotated[1]) 
 
+    #imgs_array_rotated_lumi=add_brightness(imgs_array_rotated )
+
     #noise :
     imgs_array_rotated_augmented = add_noise(imgs_array_rotated, 0.02)
     
     #setup dicts : slightly different for images and their groundtruth : 
     #no change of brightness in groundtruth images
-    data_gen_args_img = dict(
-            width_shift_range=0.05,
-            height_shift_range=0.05,
-            zoom_range=0.2,
-            rotation_range=None,     
-            horizontal_flip=True,
-            vertical_flip=True,
-            data_format=None,
-            brightness_range= [0.5,1.5])
 
-    data_gen_args_gt = dict(
+    data_gen_args = dict(
             width_shift_range=0.05,
             height_shift_range=0.05,
             zoom_range=0.2,
@@ -81,8 +78,8 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
             data_format=None,
             brightness_range= None)
 
-    image_datagen = ImageDataGenerator(**data_gen_args_img , fill_mode ='reflect')
-    gt_datagen = ImageDataGenerator(**data_gen_args_gt, fill_mode ='reflect')
+    image_datagen = ImageDataGenerator(**data_gen_args , fill_mode ='reflect')
+    gt_datagen = ImageDataGenerator(**data_gen_args, fill_mode ='reflect')
 
     # Provide the same seed and keyword arguments to the fit and flow methods
     seed = 1
