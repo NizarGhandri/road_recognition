@@ -52,7 +52,7 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
     vi) height and width shift
     """
     #we begin by adding brightness
-    imgs_array = np.array([add_brightness(img) for img in imgs])
+    imgs_array = np.array([img_to_array(img) for img in imgs])
     gt_imgs_array = np.array([img_to_array(img) for img in gt_imgs])
 
     rotated = [rotate_images(img[0] , img[1]) for img in  zip(imgs_array, gt_imgs_array)]
