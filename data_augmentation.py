@@ -3,7 +3,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import os,sys
 import random
-from PIL import Image
+from PIL import Image, ImageEnhance
 from skimage.util import random_noise
 from keras.preprocessing.image import array_to_img
 from PIL import Image, ImageEnhance
@@ -39,7 +39,7 @@ def add_brightness(img1 ):
     img1_copy= array_to_img(img1)
     return img_to_array(ImageEnhance.Brightness(img1_copy).enhance(factor))
 
-def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterations):
+def augment_dataset2(imgs,gt_imgs,image_directory,gt_directory,max_number_iterations):
     """
     main function : made to add new images to the dataset
     number_iterations : number of time we do the work of adding images
@@ -51,22 +51,25 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
     v)zooms in the images
     vi) height and width shift
     """
-    #we begin by adding brightness
+    
+    print("here 2")
+    #convert images to arrays
     imgs_array = np.array([img_to_array(img) for img in imgs])
     gt_imgs_array = np.array([img_to_array(img) for img in gt_imgs])
 
+    #first randomly rotate images
+    #this is the good one don't run the rest!!!
     rotated = [rotate_images(img[0] , img[1]) for img in  zip(imgs_array, gt_imgs_array)]
     unziped_rotated= list(zip(*rotated))
     imgs_array_rotated= np.array(unziped_rotated[0])
     gt_imgs_array_rotated= np.array(unziped_rotated[1]) 
+                                                           
+    #noise
+    imgs_array_rotated_noise = add_noise(imgs_array_rotated, 0.02)
 
-    #imgs_array_rotated_lumi=add_brightness(imgs_array_rotated )
 
-    #noise :
-    imgs_array_rotated_augmented = add_noise(imgs_array_rotated, 0.02)
-    
-    #setup dicts : slightly different for images and their groundtruth : 
-    #no change of brightness in groundtruth images
+    #brightness
+    imgs_array_rotated_noise_bright= [add_brightness(img) for img in imgs_array_rotated_noise]
 
     data_gen_args = dict(
             width_shift_range=0.05,
@@ -75,35 +78,30 @@ def augment_dataset(imgs,gt_imgs,image_directory,gt_directory,max_number_iterati
             rotation_range=None,     
             horizontal_flip=True,
             vertical_flip=True,
-            data_format=None,
-            brightness_range= None)
+            data_format=None)
+      
 
     image_datagen = ImageDataGenerator(**data_gen_args , fill_mode ='reflect')
     gt_datagen = ImageDataGenerator(**data_gen_args, fill_mode ='reflect')
 
     # Provide the same seed and keyword arguments to the fit and flow methods
     seed = 1
-    image_datagen.fit(imgs_array_rotated_augmented, augment=True, seed=seed)
+    image_datagen.fit(imgs_array_rotated_noise_bright, augment=True, seed=seed)
     gt_datagen.fit(gt_imgs_array_rotated, augment=True, seed=seed)
-
-    image_generator = image_datagen.flow(imgs_array_rotated_augmented,  batch_size=12,  
+    image_generator = image_datagen.flow(imgs_array_rotated_noise,  batch_size=12,  
                               save_to_dir=image_directory, 
                               save_prefix='aug_img', 
                               save_format='png', seed=seed)
-
     gt_generator = gt_datagen.flow(gt_imgs_array_rotated, batch_size=12,  
                               save_to_dir=gt_directory, 
                               save_prefix='aug_gt', 
                               save_format='png', seed=seed)
     # combine generators into one which yields image and masks
     train_generator = zip(image_generator, gt_generator)
-    
+
     i=0
     for batch in train_generator:
 
         i += 1
         if i > max_number_iterations:
             break
-    
-    
-
