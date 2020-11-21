@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import os,sys
 from PIL import Image
 
-
+from keras.preprocessing.image import img_to_array
+from keras.preprocessing.image import array_to_img
 
 
 # Helper functions
@@ -19,9 +20,9 @@ def load_image(infilename):
     data = mpimg.imread(infilename)
     return data
 
-def img_float_to_uint8(img):
+def img_float_to_uint8(img,PIXEL_DEPTH=255):
     rimg = img - np.min(img)
-    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
+    rimg = (rimg / np.max(rimg) * PIXEL_DEPTH).round().astype(np.uint8)
     return rimg
 
 # Concatenate an image and its groundtruth
@@ -41,30 +42,74 @@ def concatenate_images(img, gt_img):
         cimg = np.concatenate((img8, gt_img_3c), axis=1)
     return cimg
 
-def img_crop(im, patch_dimensions):
-    # We treat square patches
+def img_crop(im, w, h):
     list_patches = []
-    # We treat square images
-    img_dimensions = im.shape[0]
-    #####PB PADDING SIZE
-    padding_size = int((img_dimensions - patch_dimensions)/2)
+    imgwidth = im.shape[0]
+    imgheight = im.shape[1]
     is_2d = len(im.shape) < 3
-    #### PB IN RANGE BOUCLES FOR
-    for i in range(0,img_dimensions,patch_dimensions):
-        for j in range(0,img_dimensions,patch_dimensions):
-            # pad the data before treating it
+    for i in range(0,imgheight,h):
+        for j in range(0,imgwidth,w):
             if is_2d:
-                im1 = np.pad(im, ((padding_size, padding_size), (padding_size, padding_size)), 'reflect')
-                ###### PB HEREEEEEEEEE
-                im_patch = im1[j:j+patch_dimensions, i:i+patch_dimensions]
+                im_patch = im[j:j+w, i:i+h]
             else:
-                im1 = np.pad(im, ((padding_size, padding_size), (padding_size, padding_size), (0, 0)), 'reflect')
-                im_patch = im1[j:j+patch_dimensions, i:i+patch_dimensions, :]
+                im_patch = im[j:j+w, i:i+h, :]
             list_patches.append(im_patch)
     return list_patches
 
-def value_to_class(v,foreground_threshold=0.5):
-    #### DES TRUCS A CHANGER !!!!!!!!!!!!
-    df = np.sum(v)
-    if df > foreground_threshold : return 1
-    else : return 0
+def value_to_class_NN(v,foreground_threshold=0.25):
+    df = np.sum(np.mean(v))
+    if df > foreground_threshold:
+        return [0, 1]
+    else:
+        return [1, 0]
+
+def label_to_img(imgwidth, imgheight, w, h, prediction):
+    """
+    w : patch width
+    h : patch height
+    prediction : array that was predicted by model : we will take just first column
+    """
+    array_labels = np.zeros([imgwidth, imgheight])
+    idx = 0
+    for i in range(0, imgheight, h):
+        for j in range(0, imgwidth, w):
+            #pq???
+            l=(~prediction[idx][0] > 0.5)
+            #celle du prof en commentaire
+            """if prediction[idx][0] > 0.5:  # bgrd
+                l = 0
+            else:
+                l = 1"""
+            array_labels[j:j+w, i:i+h] = l
+            idx = idx + 1
+    return array_labels
+
+
+
+def plot_img_pred_and_overlay(img, predicted_img,PIXEL_DEPTH=255):
+    """
+    INPUTS:
+    1)img : satellite image
+    2)predicted_img : its prediction(image format)
+    returns two different plots:
+    1) Image and its prediction side by side
+    2) Image and the prediction as a red background
+    """
+    w = img.shape[0]
+    h = img.shape[1]
+    color_mask = np.zeros((w, h, 3), dtype=np.uint8)
+    color_mask[:, :, 0] = predicted_img*PIXEL_DEPTH
+
+    img8 = img_float_to_uint8(img)
+    background = Image.fromarray(img8, 'RGB').convert("RGBA")
+    overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
+    new_img = Image.blend(background, overlay, 0.2)
+
+    #show image and its prediction one on another
+    plt.figure(figsize=(6, 6)) # create a figure with the default size 
+    plt.imshow(new_img)
+
+    #show image and its prediction side by side
+    cimg = concatenate_images(img, predicted_img)
+    plt.figure(figsize=(10, 10)) # create a figure with the default size 
+    plt.imshow(cimg, cmap='Greys_r')
