@@ -88,7 +88,7 @@ def split(X, Y,test_ratio=0.2 ,  random_state=0):
   #split into train and test sets
   return train_test_split(X,Y, test_size=test_ratio, random_state=random_state )
 
-def preprocess(root_dir, max_iters, random_state=0, test_ratio=0.2 , foreground_threshold = 0.25 , unet=False):
+def preprocess(root_dir, max_iters, random_state=0, test_ratio=0.2 , foreground_threshold = 0.25 , work_with_patches=False):
   #foreground_threshold = 0.25 is percentage of pixels > 1 required to assign a foreground label to a patch
 
     #get the images directory
@@ -104,22 +104,19 @@ def preprocess(root_dir, max_iters, random_state=0, test_ratio=0.2 , foreground_
     #perform data augmentation
     imgs_aug, gt_imgs_aug =data_augment(imgs, gt_imgs, image_dir, gt_dir ,max_iters )
         
-  
+    if work_with_patches:
+      #divide images into patches
+      img_patches, gt_patches=get_patches(imgs_aug, gt_imgs_aug)
+      # Compute features for each image patch
+      X, Y =compute_features(img_patches, gt_patches , foreground_threshold)
 
-
-    if(unet):
-      print("unet")
+    else:
+      #print("unet")
       X= np.asarray(imgs_aug)
 
       #this is needed for the unet
       Y= np.expand_dims( np.asarray(gt_imgs_aug), axis=3)
       #Y= np.asarray(gt_imgs_aug)
-
-    else:
-      #divide images into patches
-      img_patches, gt_patches=get_patches(imgs_aug, gt_imgs_aug)
-      # Compute features for each image patch
-      X, Y =compute_features(img_patches, gt_patches , foreground_threshold)
 
     #split the data into train and test sets
     X_train,X_test,Y_train,Y_test=train_test_split(X,Y, test_size=test_ratio, random_state=random_state)
