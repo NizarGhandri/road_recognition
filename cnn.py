@@ -7,7 +7,6 @@ import preprocess_data
 from datetime import datetime
 import pickle
 from tensorflow import keras
-from keras.callbacks import History
 from tensorflow.keras import datasets, layers, models,regularizers
 from keras.layers import ReLU, LeakyReLU, BatchNormalization, Conv2D,\
      MaxPool2D, Dropout, Input, AveragePooling2D, Dense
