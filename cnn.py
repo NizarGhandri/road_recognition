@@ -14,39 +14,12 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 
 
 
-#pour le moment not called
-# def callbacks_cnn(model_path='saved_model/cnn'):
-#     """
-#     function to get checkpointer, early stopper and lr_reducer in our CNN
-#     """
-#     #Callback to save the Keras model or model weights at some frequency.
-#     checkpointer = ModelCheckpoint(model_path,
-#                                 monitor=f1_m,
-#                                 mode="max",
-#                                 save_best_only = True,
-#                                 verbose=1)
-
-#     #Stop training when f1_m metric has stopped improving for 20 epochs
-#     earlystopper = EarlyStopping(monitor =f1_m, 
-#                                 mode='max', 
-#                                 patience = 5,
-#                                 verbose = 1,
-#                                 restore_best_weights = True)
-
-#     #Reduce learning rate when loss has stopped improving for 3 epochs
-#     lr_reducer = ReduceLROnPlateau(monitor='loss',
-#                                 mode='min',
-#                                 factor=0.9,
-#                                 patience=2,
-#                                 min_delta= 0.001, 
-#                                 min_lr=0.00001,
-#                                 verbose=1)
-
-#     return [checkpointer, earlystopper, lr_reducer]
-
 class Convolutinal_neural_net (Model):
 
     def __init__ (self, input_shape=None, build_on_init=True):
+        """
+        Initialize variables and attributes
+        """
         if (build_on_init):
             if (input_shape is None):  
                 raise ValueError("input_shape needs to be specified")
