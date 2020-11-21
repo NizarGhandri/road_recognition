@@ -1,11 +1,13 @@
 from model import Model
 import os 
 from metrics import *
+import numpy as np
 import matplotlib.pyplot as plt
 import preprocess_data
 from datetime import datetime
 import pickle
 from tensorflow import keras
+from keras.callbacks import History
 from tensorflow.keras import datasets, layers, models,regularizers
 from keras.layers import ReLU, LeakyReLU, BatchNormalization, Conv2D,\
      MaxPool2D, Dropout, Input, AveragePooling2D, Dense
@@ -121,11 +123,43 @@ class Convolutinal_neural_net (Model):
         self.model.compile(optimizer='adam', metrics=['acc', f1_m, precision_m, recall_m],\
                             loss='binary_crossentropy')
         return self.model
-        
+
+    def callbacks_cnn(self,model_path='saved_model/cnn'):
+        """
+        function to get checkpointer, early stopper and lr_reducer in our CNN
+        """
+        #Callback to save the Keras model or model weights at some frequency.
+        checkpointer = ModelCheckpoint(model_path,
+                                    monitor=f1_m,
+                                    mode="max",
+                                    save_best_only = True,
+                                    verbose=1)
+
+        #Stop training when f1_m metric has stopped improving for 20 epochs
+        earlystopper = EarlyStopping(monitor =f1_m, 
+                                    mode='max', 
+                                    patience = 5,
+                                    verbose = 1,
+                                    restore_best_weights = True)
+
+        #Reduce learning rate when loss has stopped improving for 3 epochs
+        lr_reducer = ReduceLROnPlateau(monitor='loss',
+                                    mode='min',
+                                    factor=0.9,
+                                    patience=2,
+                                    min_delta= 0.001, 
+                                    min_lr=0.00001,
+                                    verbose=1)
+
+        return [checkpointer, earlystopper, lr_reducer]
+
     def fit (self, X, Y, epochs=3, batch_size=64, class_weights = None, plots=True) : 
+        """
+        We fit our model
+        """
         assert(X.shape[1:] == self.input_shape)
         self.history = self.model.fit(X, Y, epochs=epochs, batch_size=batch_size, class_weights = class_weights,\
-                                 use_multiprocessing=True, workers = os.cpu_count())
+                                 use_multiprocessing=True, workers = os.cpu_count(),callbacks=[self.callbacks_cnn])
 
         self.loaded_trained = True
         # list all data in history
@@ -135,6 +169,9 @@ class Convolutinal_neural_net (Model):
         return self.model
 
     def serialize(self, path): 
+        """
+        serialize our model
+        """
         if not os.path.isdir(path): 
             raise ValueError("path is incorrect")
         else:
@@ -146,6 +183,9 @@ class Convolutinal_neural_net (Model):
 
     
     def load_serialized(self, path):
+        """
+        load an already serialized model
+        """
         if not os.path.isdir(path): 
             raise ValueError("path is incorrect, please give a path for a directory")
         else:
@@ -156,15 +196,20 @@ class Convolutinal_neural_net (Model):
                     self.history = pickle.load(history.history, file_pi)
                 return True
             return False
-
-
+    
     def predict(self, X):
+        """
+        after fitting our model, we used to predict the output of the testing set
+        """
         if (not self.loaded_trained): 
             raise ValueError("Train or load a model before prediction")
         return self.model.predict(X) 
 
 
     def plot_history (self):
+        """
+        plot the accuracy, the F1 score, the precision and the recall as a function of the number of epochs
+        """
         if not self.loaded_trained: 
             raise ValueError("Train or load a model beforehand")
             if self.history is None: 
@@ -180,26 +225,26 @@ class Convolutinal_neural_net (Model):
         axs[0, 0].xlabel('epoch')
         axs[0, 0].legend(['train', 'validation'], loc='upper left')
         # summarize history for f1 score
-        ax[0, 1].plot(history.history['f1_m'])
-        ax[0, 1].plot(history.history['val_f1_m'])
-        ax[0, 1].title('model f1 score')
-        ax[0, 1].ylabel('f1 score')
-        ax[0, 1].xlabel('epoch')
-        ax[0, 1].legend(['train', 'validation'], loc='upper left')
+        axs[0, 1].plot(history.history['f1_m'])
+        axs[0, 1].plot(history.history['val_f1_m'])
+        axs[0, 1].title('model f1 score')
+        axs[0, 1].ylabel('f1 score')
+        axs[0, 1].xlabel('epoch')
+        axs[0, 1].legend(['train', 'validation'], loc='upper left')
         # summarize history for precision
-        ax[1, 0].plot(history.history['precision_m'])
-        ax[1, 0].plot(history.history['val_precision_m'])
-        ax[1, 0].title('model precision')
-        ax[1, 0].ylabel('precision')
-        ax[1, 0].xlabel('epoch')
-        ax[1, 0].legend(['train', 'validation'], loc='upper left')
+        axs[1, 0].plot(history.history['precision_m'])
+        axs[1, 0].plot(history.history['val_precision_m'])
+        axs[1, 0].title('model precision')
+        axs[1, 0].ylabel('precision')
+        axs[1, 0].xlabel('epoch')
+        axs[1, 0].legend(['train', 'validation'], loc='upper left')
         # summarize history for recall 
-        ax[1, 0].plot(history.history['recall_m'])
-        ax[1, 0].plot(history.history['val_recall_m'])
-        ax[1, 0].title('model recall')
-        ax[1, 0].ylabel('recall')
-        ax[1, 0].xlabel('epoch')
-        ax[1, 0].legend(['train', 'validation'], loc='upper left')
+        axs[1, 0].plot(history.history['recall_m'])
+        axs[1, 0].plot(history.history['val_recall_m'])
+        axs[1, 0].title('model recall')
+        axs[1, 0].ylabel('recall')
+        axs[1, 0].xlabel('epoch')
+        axs[1, 0].legend(['train', 'validation'], loc='upper left')
         plt.show()
 
     def evaluate(self, X, y):
