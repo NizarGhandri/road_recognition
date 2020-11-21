@@ -88,6 +88,9 @@ def label_to_img(imgwidth, imgheight, w, h, prediction):
 
 def plot_img_pred_and_overlay(img, predicted_img,PIXEL_DEPTH=255):
     """
+    INPUTS:
+    1)img : satellite image
+    2)predicted_img : its prediction(image format)
     returns two different plots:
     1) Image and its prediction side by side
     2) Image and the prediction as a red background
