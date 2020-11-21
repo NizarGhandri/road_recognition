@@ -20,9 +20,9 @@ def load_image(infilename):
     data = mpimg.imread(infilename)
     return data
 
-def img_float_to_uint8(img):
+def img_float_to_uint8(img,PIXEL_DEPTH=255):
     rimg = img - np.min(img)
-    rimg = (rimg / np.max(rimg) * 255).round().astype(np.uint8)
+    rimg = (rimg / np.max(rimg) * PIXEL_DEPTH).round().astype(np.uint8)
     return rimg
 
 # Concatenate an image and its groundtruth
@@ -84,7 +84,14 @@ def label_to_img(imgwidth, imgheight, w, h, prediction):
             idx = idx + 1
     return array_labels
 
-def make_img_overlay(img, predicted_img,PIXEL_DEPTH=255):
+
+
+def plot_img_pred_and_overlay(img, predicted_img,PIXEL_DEPTH=255):
+    """
+    returns two different plots:
+    1) Image and its prediction side by side
+    2) Image and the prediction as a red background
+    """
     w = img.shape[0]
     h = img.shape[1]
     color_mask = np.zeros((w, h, 3), dtype=np.uint8)
@@ -94,4 +101,12 @@ def make_img_overlay(img, predicted_img,PIXEL_DEPTH=255):
     background = Image.fromarray(img8, 'RGB').convert("RGBA")
     overlay = Image.fromarray(color_mask, 'RGB').convert("RGBA")
     new_img = Image.blend(background, overlay, 0.2)
-    return new_img
+
+    #show image and its prediction one on another
+    plt.figure(figsize=(6, 6)) # create a figure with the default size 
+    plt.imshow(new_img)
+
+    #show image and its prediction side by side
+    cimg = concatenate_images(img, predicted_img)
+    plt.figure(figsize=(10, 10)) # create a figure with the default size 
+    plt.imshow(cimg, cmap='Greys_r')
