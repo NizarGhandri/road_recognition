@@ -20,13 +20,13 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def cross_validate (self, X, y): 
-        pass
-
-    @abstractmethod
     def serialize(self, path):
-        
         pass
 
     @abstractmethod
-    def load_serialized(self, path): 
+    def load_serialized(self, path):
+        pass 
+
+    @abstractmethod
+    def plot_history(self): 
+        pass
