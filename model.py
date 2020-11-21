@@ -22,3 +22,11 @@ class Model(ABC):
     @abstractmethod
     def cross_validate (self, X, y): 
         pass
+
+    @abstractmethod
+    def serialize(self, path):
+        
+        pass
+
+    @abstractmethod
+    def load_serialized(self, path): 
