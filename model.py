@@ -19,7 +19,7 @@ class Model(ABC):
             if torch.cuda.is_available():
                 torch.device("cuda")
             else: 
-                raise("you don't have cuda please set it up and try again")
+                raise ValueError("you don't have cuda please set it up and try again")
         else: 
             torch.device("cpu")
 
@@ -142,18 +142,18 @@ class Model(ABC):
         return [checkpointer, earlystopper, lr_reducer]
 
     def fit (self, X, Y, epochs=600, batch_size=16, class_weights = None, plots=True) : 
-    """
-    We fit our model
-    """
-    assert(X.shape[1:] == self.input_shape)
-    self.history = self.model.fit(X, Y, epochs=epochs, batch_size=batch_size, \
-                                use_multiprocessing=True, workers = os.cpu_count(),callbacks=self._callbacks_cnn())
+        """
+        We fit our model
+        """
+        assert(X.shape[1:] == self.input_shape)
+        self.history = self.model.fit(X, Y, epochs=epochs, batch_size=batch_size, \
+                                    use_multiprocessing=True, workers = os.cpu_count(),callbacks=self._callbacks_cnn())
 
-    self.loaded_trained = True
-    # list all data in history
-    if (plots):
-        print(self.history.history.keys())
-        self.plot_history()
-    return self.model
+        self.loaded_trained = True
+        # list all data in history
+        if (plots):
+            print(self.history.history.keys())
+            self.plot_history()
+        return self.model
 
 
